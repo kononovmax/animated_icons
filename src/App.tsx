@@ -1,76 +1,89 @@
-import React, { useState } from "react";
-import { ICONS } from "./icons";
-import { MultiMorphIcon } from "./components/MultiMorphIcon";
-import { FrameByFrameIcon } from "./components/FrameByFrameIcon";
-import { PerformanceTester } from "./components/PerformanceTester";
+import React, { useState, useRef } from "react";
+import IconGrid from "./components/IconGrid";
+import Controls from "./components/Controls";
+import { icons } from "./icons";
+import * as Anim from "./animations";
 
-const App: React.FC = () => {
-	const [mode, setMode] = useState<"path" | "frame">("path");
+export default function App() {
+	const [selectedId, setSelectedId] = useState<string | null>(null);
+	const selectedElRef = useRef<Element | null>(null);
+	const [selectedAnim, setSelectedAnim] = useState<Anim.AnimName>("Поворот");
+
+	// control states
+	const [duration, setDuration] = useState(800);
+	const [intensity, setIntensity] = useState(120);
+	const [iterations, setIterations] = useState(1);
+	const [easing, setEasing] = useState("ease");
+
+	const handleSelect = (id: string, el: Element | null) => {
+		setSelectedId(id);
+		selectedElRef.current = el;
+	};
+
+	const play = () => {
+		if (!selectedId || !selectedElRef.current) {
+			alert("Выберите иконку");
+			return;
+		}
+		const fn = Anim.animations[selectedAnim as Anim.AnimName];
+		if (!fn) {
+			alert("Анимация не найдена");
+			return;
+		}
+		fn(selectedElRef.current, {
+			duration,
+			easing,
+			iterations,
+			intensity,
+		});
+	};
 
 	return (
-		<div style={{ fontFamily: "Inter, Roboto, sans-serif", padding: 20 }}>
-			<h1 style={{ margin: 0 }}>Icon animation prototype (24×24)</h1>
-			<p style={{ color: "#666" }}>
-				Два подхода: path-morphing и frame-by-frame. Заглушки вместо
-				изображений для покадровки.
-			</p>
+		<div className="min-h-screen p-6 bg-gray-50">
+			<h1 className="text-2xl font-bold mb-4">
+				SVG Icon Animations — Проект
+			</h1>
+			<div className="grid grid-cols-3 gap-6">
+				<div className="col-span-2">
+					<IconGrid
+						icons={icons}
+						selectedId={selectedId}
+						onSelect={handleSelect}
+					/>
+				</div>
+				<div>
+					<Controls
+						animationList={Object.keys(Anim.animations)}
+						selectedAnim={selectedAnim}
+						onChangeAnim={(s) =>
+							setSelectedAnim(s as Anim.AnimName)
+						}
+						duration={duration}
+						onDuration={setDuration}
+						intensity={intensity}
+						onIntensity={setIntensity}
+						iterations={iterations}
+						onIterations={setIterations}
+						easing={easing}
+						onEasing={setEasing}
+						onPlay={play}
+					/>
 
-			<div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
-				<button
-					onClick={() => setMode("path")}
-					style={{
-						padding: "8px 12px",
-						background: mode === "path" ? "#0366d6" : "#eee",
-						color: mode === "path" ? "white" : "black",
-					}}
-				>
-					Path morph
-				</button>
-				<button
-					onClick={() => setMode("frame")}
-					style={{
-						padding: "8px 12px",
-						background: mode === "frame" ? "#0366d6" : "#eee",
-						color: mode === "frame" ? "white" : "black",
-					}}
-				>
-					Frame-by-frame
-				</button>
-			</div>
-
-			<div
-				style={{
-					display: "grid",
-					gridTemplateColumns: "repeat(10, 28px)",
-					gap: 8,
-					alignItems: "center",
-				}}
-			>
-				{ICONS.map((icon) => (
-					<div
-						key={icon.id}
-						title={icon.name}
-						style={{ width: 24, height: 24 }}
-					>
-						{mode === "path" ? (
-							<MultiMorphIcon
-								paths={icon.paths}
-								durationMs={700}
-							/>
-						) : (
-							<FrameByFrameIcon
-								framesCount={6}
-								size={24}
-								fps={12}
-							/>
-						)}
+					<div className="mt-4 text-sm text-gray-600">
+						<p>Выбранная иконка: {selectedId ?? "нет"}</p>
+						<p className="mt-2">
+							Добавление новой иконки: редактируйте{" "}
+							<code>src/icons.tsx</code> и добавляйте в массив{" "}
+							<code>icons</code>.
+						</p>
+						<p className="mt-2">
+							Добавление новой анимации: добавьте функцию в{" "}
+							<code>src/animations.ts</code> и экспортируйте в
+							объект <code>animations</code>.
+						</p>
 					</div>
-				))}
+				</div>
 			</div>
-
-			<PerformanceTester />
 		</div>
 	);
-};
-
-export default App;
+}
